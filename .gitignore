@@ -19,7 +19,7 @@ models/mta_rf_model_exits/
 .DS_Store
 Thumbs.db
 
-# Data files (optional)
+# Data files 
 *.csv
 *.json
 *.parquet
