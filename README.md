@@ -7,6 +7,7 @@
   - [Prerequisites](#prerequisites)
   - [Kafka Installation](#kafka-installation)
   - [Terminal Setup](#terminal-setup-run-in-4-terminals)
+  - [Apache PySpark & SparkML Setup for EDA Notebook](#apache-pyspark--sparkml-setup-for-eda-notebook)
   - [Notebook Execution Order](#notebook-execution-order)
 - [EDA & Modeling](#exploratory-data-analysis--sparkml-historical-modeling-edasparkml_analysis)
 - [Kafka Simulation & Streaming](#kafka-simulation--streaming-ingestion-kafka)
@@ -19,6 +20,7 @@
 - [Sample Output](#sample-prediction-output)
 - [Data Source](#data-source)
 - [Future Improvements](#future-improvements)
+
 
 ## Executive Summary
 
