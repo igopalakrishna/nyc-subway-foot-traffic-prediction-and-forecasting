@@ -1,4 +1,4 @@
-# NYC Subway Foot Traffic Prediction & Forecasting
+# 🗽 NYC Subway Foot Traffic Prediction & Forecasting
 
 ## Table of Contents
 - [Executive Summary](#executive-summary)
