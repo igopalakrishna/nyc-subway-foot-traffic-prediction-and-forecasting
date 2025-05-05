@@ -3,25 +3,39 @@
 ## Table of Contents
 - [Executive Summary](#executive-summary)
 - [Project Structure](#project-structure)
-- [EDA & Modeling](#exploratory-data-analysis--sparkml-historical-modeling-edasparkml_prediction)
+- [Getting Started: Setup Instructions](#getting-started-setup-instructions)
+  - [Prerequisites](#prerequisites)
+  - [Kafka Installation](#kafka-installation)
+  - [Terminal Setup](#terminal-setup-run-in-4-terminals)
+  - [Notebook Execution Order](#notebook-execution-order)
+- [EDA & Modeling](#exploratory-data-analysis--sparkml-historical-modeling-edasparkml_analysis)
 - [Kafka Simulation & Streaming](#kafka-simulation--streaming-ingestion-kafka)
-  - [Kafka Data Producer](#kafka-data-producer-send_turnstiledatash)
-  - [Kafka Consumer](#kafka-consumer-kafkastreamconsumeripynb)
+  - [Kafka Data Producer](#kafka-data-producer-send_turnstile_datash)
+  - [Kafka Consumer](#kafka-consumer-kafka_stream_consumeripynb)
 - [Model Training](#model-training-with-sparkml-models)
 - [Live Prediction](#real-time-foot-traffic-forecasting-streaming)
-- [Aggregated Variant](#extra-aggregated-modeling-variant-aggregatemodel_v2)
+- [Aggregated Variant](#extra-aggregated-modeling-variant-aggregate_model_v2)
 - [Lessons Learned](#lessons-learned)
 - [Sample Output](#sample-prediction-output)
 - [Data Source](#data-source)
 - [Future Improvements](#future-improvements)
-- [Setup Instructions](#setup-instructions)
 
 ## Executive Summary
 
 This project implements a real-time big data pipeline to analyze and forecast passenger foot traffic across NYC subway stations using MTA turnstile data. By simulating and ingesting real-time data using Apache Kafka, transforming it with PySpark, and storing it in MongoDB, we built predictive models using SparkML to support smarter transit operations.
 
-**Tech Stack:**
-Apache Kafka, Apache Spark (Structured Streaming & MLlib), MongoDB, Python, Bash
+## **Tech Stack**
+
+* **Apache Spark / PySpark** — Distributed computing and real-time stream processing (Structured Streaming & MLlib)
+* **SparkML** — Machine learning pipeline for Random Forest modeling and feature engineering
+* **Apache Kafka** — Real-time data ingestion and synthetic stream simulation
+* **MongoDB / NoSQL** — Persistent storage for structured turnstile event data
+* **Python** — Primary programming language across all modules
+* **Matplotlib / Seaborn / Pandas** — Exploratory data analysis and data visualization
+* **SQL / Spark SQL** — Querying and transforming streaming and batch data
+* **Google Colab** — EDA, feature engineering, and model prototyping in notebooks
+* **Bash** — Shell scripting for Kafka data producer automation
+
 
 ---
 
@@ -46,7 +60,67 @@ nyc-subway-foot-traffic-prediction-and-forecasting/
 ├── README.md
 └── requirements.txt 
 ```
+---
 
+## Getting Started: Setup Instructions
+
+### Prerequisites
+
+```bash
+# Required Software
+- Apache Kafka 2.13 (with Zookeeper)
+- Apache Spark (with spark-sql-kafka and MongoDB connector)
+- MongoDB
+- Python 3.x
+```
+
+### Kafka Installation
+
+To install Kafka 3.5.0 (Scala 2.13):
+
+```bash
+wget https://downloads.apache.org/kafka/3.5.0/kafka_2.13-3.5.0.tgz
+tar -xzf kafka_2.13-3.5.0.tgz
+cd kafka_2.13-3.5.0
+```
+
+### Terminal Setup (Run in 4 terminals)
+
+```bash
+# Terminal 1 — Zookeeper
+cd ~/kafka_2.13-3.5.0
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+# Terminal 2 — Kafka Server
+cd ~/kafka_2.13-3.5.0
+bin/kafka-server-start.sh config/server.properties
+
+# Terminal 3 — Kafka Producer (Turnstile Simulator)
+chmod +x ~/send_turnstile_data.sh
+~/send_turnstile_data.sh
+
+# (Optional) Inspect the script
+nano ~/send_turnstile_data.sh
+
+# Terminal 4 — MongoDB
+mongod
+```
+
+### Notebook Execution Order
+
+```bash
+# 1. EDA and Historical Modeling
+eda_sparkml_analysis/nyc_turnstile_eda_sparkml.ipynb
+
+# 2. Kafka Stream Consumer + MongoDB Writer
+kafka/kafka_stream_consumer.ipynb
+
+# 3. Model Training Pipeline
+models/training_model.ipynb
+
+# 4. Live Prediction via Streaming Inference
+streaming/stream_consume_predict.ipynb
+```
 ---
 
 ## Exploratory Data Analysis & SparkML Historical Modeling (`eda_sparkml_analysis/`)
@@ -65,15 +139,23 @@ We trained two separate models to predict `ENTRIES` and `EXITS`. Model evaluatio
 
 ### How to Reproduce This Phase
 
-```bash
+
 1. Upload CSV data files to the notebook directory
-2. Run the setup cells to install and configure Apache Spark
-3. Execute EDA sections sequentially:
-   - Data loading
-   - Data cleaning and transformation
-   - Visualization (Pandas/Seaborn, then PySpark)
-4. Proceed with ML model training and evaluation cells
-```
+
+2. **Run Notebook**
+
+   * Open the `nyc_turnstile_eda_sparkml.ipynb` notebook (or `BIgdataProjectfile.ipynb` if renamed).
+   * Execute all cells sequentially:
+
+     * Data loading and cleaning
+     * Feature engineering
+     * Visualizations (using Seaborn and Matplotlib)
+     * ML model training (Linear Regression, Decision Tree, Random Forest)
+
+3. **Results**
+
+   * Model performance metrics: **RMSE**, **MAE**, and **R²** printed per model
+   * EDA results are displayed as inline charts and plots
 
 This historical modeling step was critical in establishing a baseline understanding of foot traffic behavior and ensuring the streaming predictions had a strong statistical foundation.
 
@@ -194,57 +276,6 @@ This notebook demonstrates how batch-trained models can drive live inference, pr
 * Cross-validation for hyperparameter tuning
 * Integration with weather/event APIs
 * Anomaly detection on foot traffic surges
-
----
-
-## Setup Instructions
-
-### Prerequisites
-
-```bash
-# Prerequisites
-- Apache Kafka 2.13 (with Zookeeper)
-- Apache Spark (with spark-sql-kafka and MongoDB connector)
-- MongoDB
-- Python 3.x
-```
-### Terminal Setup (Run in 4 terminals)
-
-```bash
-# Terminal 1 — Zookeeper
-cd ~/kafka_2.13-3.5.0
-bin/zookeeper-server-start.sh config/zookeeper.properties
-
-# Terminal 2 — Kafka Server
-cd ~/kafka_2.13-3.5.0
-bin/kafka-server-start.sh config/server.properties
-
-# Terminal 3 — Kafka Producer (Turnstile Simulator)
-chmod +x ~/send_turnstile_data.sh
-~/send_turnstile_data.sh
-
-# (Optional) Inspect the script
-nano ~/send_turnstile_data.sh
-
-# Terminal 4 — MongoDB
-mongod
-```
-
-### Notebook Execution Order
-
-```bash
-# 1. EDA and Historical Modeling
-eda_sparkml_analysis/nyc_turnstile_eda_sparkml.ipynb
-
-# 2. Kafka Stream Consumer + MongoDB Writer
-kafka/kafka_stream_consumer.ipynb
-
-# 3. Model Training Pipeline
-models/training_model.ipynb
-
-# 4. Live Prediction via Streaming Inference
-streaming/stream_consume_predict.ipynb
-```
 
 ---
 
