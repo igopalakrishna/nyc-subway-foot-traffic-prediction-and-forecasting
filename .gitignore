@@ -1,0 +1,25 @@
+# Spark & Kafka generated files
+spark-warehouse/
+kafka_2.13-3.5.0/
+__pycache__/
+*.log
+*.tmp
+
+# Large saved models
+models/mta_rf_entries_model/
+models/mta_rf_exits_model/
+models/mta_rf_model/
+models/mta_rf_model_entries/
+models/mta_rf_model_exits/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Data files (optional)
+*.csv
+*.json
+*.parquet
