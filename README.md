@@ -1,7 +1,7 @@
 # 🗽 NYC Subway Foot Traffic Prediction & Forecasting
 
 ## Table of Contents
-- [Executive Summary](#executive-summary)
+- [Introduction](#introduction)
 - [Project Structure](#project-structure)
 - [Getting Started: Setup Instructions](#getting-started-setup-instructions)
   - [Prerequisites](#prerequisites)
@@ -22,7 +22,7 @@
 - [Future Improvements](#future-improvements)
 
 
-## Executive Summary
+## Introduction
 
 This project implements a real-time big data pipeline to analyze and forecast passenger foot traffic across NYC subway stations using MTA turnstile data. By simulating and ingesting real-time data using Apache Kafka, transforming it with PySpark, and storing it in MongoDB, we built predictive models using SparkML to support smarter transit operations.
 
