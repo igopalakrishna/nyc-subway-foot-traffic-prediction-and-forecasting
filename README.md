@@ -106,6 +106,40 @@ nano ~/send_turnstile_data.sh
 mongod
 ```
 
+---
+
+### Apache PySpark & SparkML Setup for EDA Notebook
+
+If using **Google Colab**:
+
+No local installation required. The environment supports PySpark. Use the following setup cell at the top of your notebook:
+
+```python
+!apt-get install openjdk-11-jdk-headless -qq > /dev/null
+!wget -q http://apache.osuosl.org/spark/spark-3.1.2/spark-3.1.2-bin-hadoop3.2.tgz
+!tar xf spark-3.1.2-bin-hadoop3.2.tgz
+!pip install -q findspark
+
+import os
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-11-openjdk-amd64"
+os.environ["SPARK_HOME"] = "/content/spark-3.1.2-bin-hadoop3.2"
+
+import findspark
+findspark.init()
+```
+
+If running **locally** (Jupyter or VSCode):
+
+Install the following Python packages:
+
+```bash
+pip install pyspark pandas matplotlib seaborn numpy
+```
+
+Ensure that `JAVA_HOME` is correctly set in your system's environment variables (Java 8 or Java 11 is recommended).
+
+---
+
 ### Notebook Execution Order
 
 ```bash
@@ -121,6 +155,8 @@ models/training_model.ipynb
 # 4. Live Prediction via Streaming Inference
 streaming/stream_consume_predict.ipynb
 ```
+
+
 ---
 
 ## Exploratory Data Analysis & SparkML Historical Modeling (`eda_sparkml_analysis/`)
@@ -147,10 +183,36 @@ We trained two separate models to predict `ENTRIES` and `EXITS`. Model evaluatio
    * Open the `nyc_turnstile_eda_sparkml.ipynb` notebook (or `BIgdataProjectfile.ipynb` if renamed).
    * Execute all cells sequentially:
 
-     * Data loading and cleaning
-     * Feature engineering
-     * Visualizations (using Seaborn and Matplotlib)
-     * ML model training (Linear Regression, Decision Tree, Random Forest)
+     * Data Loading & Inspection:
+
+       * Use `pandas.read_csv()` for initial loading
+       * Check data types, missing values, and descriptive stats
+
+     * Data Cleaning & Preprocessing:
+
+       * Drop nulls
+       * Combine `C/A`, `UNIT`, `SCP` into `turnstile`
+       * Merge `date` and `time` into `datetime`
+       * Derive `hour`, `day_of_week`, and `FOOT_TRAFFIC`
+
+     * Visualization (EDA):
+
+       * Use Seaborn and Matplotlib to visualize:
+
+         * Hourly trends
+         * Weekday patterns
+         * Station-level activity
+         * Heatmaps and boxplots
+
+     * Feature Engineering:
+
+       * Convert categorical features (like `station`) using StringIndexer
+       * Assemble features using VectorAssembler
+
+     * Modeling (Spark ML):
+
+       * Train Linear Regression, Decision Tree, and Random Forest models
+       * Evaluate performance using RMSE, MAE, and R²
 
 3. **Results**
 
