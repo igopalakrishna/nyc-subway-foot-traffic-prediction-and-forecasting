@@ -33,6 +33,8 @@ The core of our system leverages SparkML to train Random Forest regression model
 
 This pipeline not only demonstrates the application of distributed big data tools such as Apache Kafka, PySpark, SparkML, and MongoDB, but also provides actionable insights to support dynamic train scheduling, reduce platform congestion, and improve operational efficiency within NYC’s public transit infrastructure. By addressing challenges of both data volume and velocity, the system aims to enable data-driven decision-making for urban mobility at scale.
 
+---
+
 ## **Tech Stack**
 
 * **Apache Spark / PySpark** — Distributed computing and real-time stream processing (Structured Streaming & MLlib)
@@ -113,8 +115,6 @@ nano ~/send_turnstile_data.sh
 mongod
 ```
 
----
-
 ### Apache PySpark & SparkML Setup for EDA Notebook
 
 If using **Google Colab**:
@@ -145,7 +145,7 @@ pip install pyspark pandas matplotlib seaborn numpy
 
 Ensure that `JAVA_HOME` is correctly set in your system's environment variables (Java 8 or Java 11 is recommended).
 
----
+
 
 ### Notebook Execution Order
 
@@ -176,7 +176,6 @@ Following the exploratory insights, we implemented a **SparkML-based prediction 
 
 We trained two separate models to predict `ENTRIES` and `EXITS`. Model evaluation was based on RMSE and feature importance scores, which revealed that **station identity** and **hour of day** were the most influential predictors. The trained models were serialized as Spark `PipelineModel` objects and later reused for real-time prediction.
 
----
 
 ### How to Reproduce This Phase
 
@@ -226,6 +225,7 @@ We trained two separate models to predict `ENTRIES` and `EXITS`. Model evaluatio
 This historical modeling step was critical in establishing a baseline understanding of foot traffic behavior and ensuring the streaming predictions had a strong statistical foundation.
 
 ---
+
 ## Kafka Simulation & Streaming Ingestion (`kafka/`)
 
 ### Kafka Data Producer (`send_turnstile_data.sh`)
@@ -239,7 +239,6 @@ This Bash script simulates real-time subway foot traffic by generating synthetic
 
 Each message is sent every 3–5 seconds to mimic a continuous real-time stream, forming the foundation of our ingest pipeline.
 
----
 
 ### Kafka Consumer (`kafka_stream_consumer.ipynb`)
 
