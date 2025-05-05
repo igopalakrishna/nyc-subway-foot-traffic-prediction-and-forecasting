@@ -1,5 +1,21 @@
 # NYC Subway Foot Traffic Prediction & Forecasting
 
+## Table of Contents
+- [Executive Summary](#executive-summary)
+- [Project Structure](#project-structure)
+- [EDA & Modeling](#exploratory-data-analysis--sparkml-historical-modeling-edasparkml_prediction)
+- [Kafka Simulation & Streaming](#kafka-simulation--streaming-ingestion-kafka)
+  - [Kafka Data Producer](#kafka-data-producer-send_turnstiledatash)
+  - [Kafka Consumer](#kafka-consumer-kafkastreamconsumeripynb)
+- [Model Training](#model-training-with-sparkml-models)
+- [Live Prediction](#real-time-foot-traffic-forecasting-streaming)
+- [Aggregated Variant](#extra-aggregated-modeling-variant-aggregatemodel_v2)
+- [Lessons Learned](#lessons-learned)
+- [Sample Output](#sample-prediction-output)
+- [Data Source](#data-source)
+- [Future Improvements](#future-improvements)
+- [Setup Instructions](#setup-instructions)
+
 ## Executive Summary
 
 This project implements a real-time big data pipeline to analyze and forecast passenger foot traffic across NYC subway stations using MTA turnstile data. By simulating and ingesting real-time data using Apache Kafka, transforming it with PySpark, and storing it in MongoDB, we built predictive models using SparkML to support smarter transit operations.
@@ -11,17 +27,24 @@ Apache Kafka, Apache Spark (Structured Streaming & MLlib), MongoDB, Python, Bash
 
 ## Project Structure
 
-```
+```bash
 nyc-subway-foot-traffic-prediction-and-forecasting/
-├── eda_sparkml_analysis/           # EDA + historical modeling using SparkML
-├── kafka/                          # Kafka simulation and consumer pipeline
-├── models/                         # Historical training notebooks
-├── streaming/                      # Live inference on streamed data
-├── aggregate_model_v2/            # Aggregated foot traffic pipeline (entries + exits)
-├── send_turnstile_data.sh         # Kafka data simulator script
+├── aggregate_model_v2/            # (EXTRA) Aggregated foot traffic pipeline (entries + exits)
+│   ├── stream_aggregated_consume_predict.ipynb
+│   ├── stream_consume_aggregate.ipynb
+│   └── training_model_aggregate.ipynb
+├── eda_sparkml_prediction/        # EDA + historical modeling using SparkML
+│   └── nyc_turnstile_eda_sparkml.ipynb
+├── kafka/                         # Kafka simulation and consumer pipeline
+│   ├── kafka_stream_consumer.ipynb
+│   └── send_turnstile_data.sh
+├── models/                        # Model training notebooks
+│   └── training_model.ipynb
+├── streaming/                     # Live inference on streamed data
+│   └── stream_consume_predict.ipynb
 ├── .gitignore
 ├── README.md
-└── requirements.txt
+└── requirements.txt 
 ```
 
 ---
@@ -55,38 +78,80 @@ We trained two separate models to predict `ENTRIES` and `EXITS`. Model evaluatio
 This historical modeling step was critical in establishing a baseline understanding of foot traffic behavior and ensuring the streaming predictions had a strong statistical foundation.
 
 ---
-
 ## Kafka Simulation & Streaming Ingestion (`kafka/`)
 
-* **Kafka Producer (`send_turnstile_data.sh`)** simulates realistic turnstile events based on:
+### Kafka Data Producer (`send_turnstile_data.sh`)
 
-  * Rush hour patterns
-  * Weekend and holiday scaling
-  * Weighted station selection (e.g., 34 ST-HERALD SQ, WORLD TRADE CTR)
-* **Kafka Consumer Notebook** reads streamed data, parses schema using Spark SQL, and:
+This Bash script simulates real-time subway foot traffic by generating synthetic MTA turnstile events. It pushes these events to the Kafka topic `mta_turnstile_topic` using the Kafka console producer utility. The script is designed with the following features:
 
-  * Writes to MongoDB (`mta_db.raw_turnstile`)
-  * Streams to Console + Memory sink for debugging
+* **Realistic Rush Hour Simulation:** Increases event frequency during 7–10 AM and 5–8 PM on weekdays.
+* **Weekend & Holiday Scaling:** Reduces traffic on weekends and major U.S. holidays by 50%–66%.
+* **Weighted Station Sampling:** Simulates higher message volume for major hubs like `34 ST-HERALD SQ`, `WORLD TRADE CTR`, and `TIME SQ-42 ST`.
+* **Custom Formatting:** Generates CSV-formatted lines with 11 fields (e.g., `STATION`, `DATE`, `ENTRIES`, `EXITS`).
+
+Each message is sent every 3–5 seconds to mimic a continuous real-time stream, forming the foundation of our ingest pipeline.
 
 ---
 
-##  Model Training with SparkML (`models/`)
+### Kafka Consumer (`kafka_stream_consumer.ipynb`)
 
-* Loaded cleaned data from MongoDB
-* Engineered features (temporal + spatial)
-* Used PySpark’s `RandomForestRegressor` to train separate models for `ENTRIES` and `EXITS`
-* Indexed station names using `StringIndexer`
-* Used `PipelineModel.save()` to serialize models
+This notebook reads streaming data from Kafka, parses and structures it using PySpark SQL, and routes the output to two primary sinks:
+
+* **MongoDB** — Stores processed events in `mta_db.raw_turnstile` for long-term access.
+* **Console/Memory Sink** — Prints batch records to the terminal for debugging and optionally allows SQL querying via in-memory tables.
+
+Key components include:
+
+* **Custom Schema Definition:** Ensures each CSV field is parsed to the correct type.
+* **Spark Structured Streaming:** Handles streaming batch logic.
+* **foreachBatch + writeStream:** Facilitates concurrent multi-sink output.
+* **Timestamp Ingestion Column:** Adds `ingest_time` to support real-time freshness metrics.
+
+This module acts as the live ETL layer, bridging the gap between synthetic event generation and downstream analysis/storage.
+
+---
+
+## Model Training with SparkML (`models/`)
+
+### Training Notebook (`training_model.ipynb`)
+
+This module loads historical data from MongoDB and builds predictive models for subway entries and exits using PySpark MLlib. Key operations include:
+
+* **Feature Engineering:** Extracts hour, day of week, and numeric station index.
+* **Vector Assembly:** Combines features into a single input vector via `VectorAssembler`.
+* **Model Training:** Uses `RandomForestRegressor` to train two independent models for `ENTRIES` and `EXITS`.
+* **Evaluation:** Uses RMSE and feature importance to validate models.
+* **Serialization:** Saves trained `PipelineModel` for future inference.
+
+Insights:
+
+* **Station ID and hour** were the most influential predictors.
+* The pipeline is modular and scalable, allowing for model retraining as new data is streamed in.
 
 ---
 
 ## Real-Time Foot Traffic Forecasting (`streaming/`)
 
-* Subscribed to `mta_turnstile_topic` using Spark Structured Streaming
-* Parsed streamed events and engineered live features (`hour`, `day_of_week`)
-* Loaded saved Random Forest models
-* Applied batch prediction to generate real-time `predicted_ENTRIES` and `predicted_EXITS`
-* Printed live prediction outputs per station to the console
+### Streaming Prediction (`stream_consume_predict.ipynb`)
+
+This notebook applies the trained models to live data coming from the Kafka stream. It performs real-time predictions of foot traffic by station, hour, and day. The steps include:
+
+* **Kafka Subscription:** Subscribes to the `mta_turnstile_topic` and reads value fields.
+* **Feature Extraction:** Derives `hour` and `day_of_week` from timestamp.
+* **Model Loading:** Loads saved `PipelineModel` objects for both entries and exits.
+* **Batch Inference:** Applies models to each mini-batch via `foreachBatch()`.
+* **Output Rendering:** Joins prediction results and displays them in the console.
+
+Sample Prediction Output:
+
+```
+| STATION         | hour | day_of_week | predicted_ENTRIES | predicted_EXITS |
+|-----------------|------|-------------|-------------------|------------------|
+| 34 ST-HERALD SQ | 11   | 2           | 8.76              | 8.96             |
+| WORLD TRADE CTR | 11   | 2           | 8.32              | 8.71             |
+```
+
+This notebook demonstrates how batch-trained models can drive live inference, providing city-scale transit insights with near real-time latency.
 
 ---
 
